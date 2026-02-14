@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { PanelLeft, ArrowLeft, ArrowRight, Menu } from 'lucide-react'
+import { PanelLeft, ArrowLeft, ArrowRight, Menu, Minus, Square, X } from 'lucide-react'
 import { cn } from '@/renderer/lib/utils'
 import { Button } from '@/renderer/components/ui'
 import { useLayoutStore } from '@/renderer/store'
@@ -28,18 +28,23 @@ export function TitleBar() {
     window.electronAPI?.close()
   }
 
+  const handleDoubleClick = () => {
+    handleMaximize()
+  }
+
   const isMac = platform === 'darwin'
   const isWindows = platform === 'win32'
 
   return (
     <header
       className={cn(
-        'h-10 shrink-0 bg-background-base relative grid grid-cols-[auto_minmax(0,1fr)_auto] items-center',
+        'h-10 shrink-0 bg-background-base relative flex items-center',
         'select-none'
       )}
+      onDoubleClick={handleDoubleClick}
     >
       {/* Left Section */}
-      <div className={cn('flex items-center min-w-0', !isMac && 'pl-2')}>
+      <div className={cn('flex items-center min-w-0 flex-1', !isMac && 'pl-2')}>
         {/* macOS traffic light spacing */}
         {isMac && <div className="h-full shrink-0 w-[72px]" />}
 
@@ -75,49 +80,55 @@ export function TitleBar() {
       </div>
 
       {/* Center Section - App Title */}
-      <div className="min-w-0 flex items-center justify-center pointer-events-none">
+      <div className="absolute left-1/2 -translate-x-1/2 pointer-events-none">
         <span className="text-xs font-medium text-text-weak pointer-events-auto">
           Ripperdoc
         </span>
       </div>
 
-      {/* Right Section */}
-      <div
-        className={cn('flex items-center min-w-0 justify-end', !isWindows && 'pr-6')}
-      >
-        {/* Windows window controls */}
+      {/* Right Section - Window Controls */}
+      <div className="flex items-center justify-end flex-1">
         {isWindows && (
-          <div className="flex items-center no-drag">
+          <div className="flex items-center">
             <button
               onClick={handleMinimize}
               className={cn(
-                'w-10 h-8 flex items-center justify-center',
-                'text-text-weak hover:text-text-base hover:bg-surface-raised',
+                'w-11 h-10 flex items-center justify-center',
+                'text-text-weak hover:text-text-base hover:bg-surface-base-hover',
                 'transition-colors'
               )}
             >
-              <span className="w-4 h-[1px] bg-current" />
+              <Minus className="w-4 h-4" />
             </button>
             <button
               onClick={handleMaximize}
               className={cn(
-                'w-10 h-8 flex items-center justify-center',
-                'text-text-weak hover:text-text-base hover:bg-surface-raised',
+                'w-11 h-10 flex items-center justify-center',
+                'text-text-weak hover:text-text-base hover:bg-surface-base-hover',
                 'transition-colors'
               )}
             >
-              <div className="w-3 h-3 border border-current" />
+              {isMaximized ? (
+                <div className="w-3 h-3 border-[1.5px] border-current" />
+              ) : (
+                <Square className="w-3.5 h-3.5" />
+              )}
             </button>
             <button
               onClick={handleClose}
               className={cn(
-                'w-10 h-8 flex items-center justify-center',
-                'text-text-weak hover:text-white hover:bg-error-base',
+                'w-11 h-10 flex items-center justify-center',
+                'text-text-weak hover:bg-error-base hover:text-white',
                 'transition-colors'
               )}
             >
-              <span className="text-lg leading-none">×</span>
+              <X className="w-4 h-4" />
             </button>
+          </div>
+        )}
+        {!isWindows && !isMac && (
+          <div className="pr-4">
+            <span className="text-xs text-text-weak">Ripperdoc</span>
           </div>
         )}
       </div>

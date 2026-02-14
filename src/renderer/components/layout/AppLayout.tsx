@@ -5,7 +5,7 @@ import { MainContent } from './MainContent'
 import { FileTree } from '../file/FileTree'
 import { useLayoutStore } from '@/renderer/store'
 import { cn } from '@/renderer/lib/utils'
-import { ChevronLeft, ChevronRight, Files } from 'lucide-react'
+import { ChevronRight, Files } from 'lucide-react'
 
 const RIGHT_PANEL_MIN_WIDTH = 200
 const RIGHT_PANEL_DEFAULT_WIDTH = 280
@@ -15,14 +15,17 @@ export function AppLayout() {
   const [rightPanelOpened, setRightPanelOpened] = useState(true)
   const [rightPanelWidth, setRightPanelWidth] = useState(RIGHT_PANEL_DEFAULT_WIDTH)
   const [isResizing, setIsResizing] = useState(false)
-  const resizeRef = useRef<HTMLDivElement>(null)
+  const startXRef = useRef(0)
+  const startWidthRef = useRef(0)
 
-  // Resize handler for right panel
+  // Resize handler for right panel - improved version
   useEffect(() => {
     if (!isResizing) return
 
     const handleMouseMove = (e: MouseEvent) => {
-      const newWidth = window.innerWidth - e.clientX
+      const deltaX = startXRef.current - e.clientX // Note: reversed for right panel
+      const newWidth = startWidthRef.current + deltaX
+
       if (newWidth >= RIGHT_PANEL_MIN_WIDTH && newWidth <= window.innerWidth * 0.4) {
         setRightPanelWidth(newWidth)
       }
@@ -30,15 +33,29 @@ export function AppLayout() {
 
     const handleMouseUp = () => {
       setIsResizing(false)
+      document.body.style.cursor = ''
+      document.body.style.userSelect = ''
     }
+
+    document.body.style.cursor = 'col-resize'
+    document.body.style.userSelect = 'none'
 
     document.addEventListener('mousemove', handleMouseMove)
     document.addEventListener('mouseup', handleMouseUp)
     return () => {
       document.removeEventListener('mousemove', handleMouseMove)
       document.removeEventListener('mouseup', handleMouseUp)
+      document.body.style.cursor = ''
+      document.body.style.userSelect = ''
     }
   }, [isResizing])
+
+  const handleResizeStart = (e: React.MouseEvent) => {
+    e.preventDefault()
+    startXRef.current = e.clientX
+    startWidthRef.current = rightPanelWidth
+    setIsResizing(true)
+  }
 
   return (
     <div className="h-screen w-screen bg-background-base flex flex-col select-none [&_input]:select-text [&_textarea]:select-text overflow-hidden">
@@ -65,9 +82,8 @@ export function AppLayout() {
         <aside
           className={cn(
             'hidden xl:flex flex-col border-t border-border-weak border-l border-border-weak',
-            'bg-background-base transition-all duration-200 relative',
-            !rightPanelOpened && 'w-12',
-            rightPanelOpened && ''
+            'bg-background-base relative',
+            !rightPanelOpened && 'w-12'
           )}
           style={{ width: rightPanelOpened ? `${rightPanelWidth}px` : undefined }}
         >
@@ -98,15 +114,14 @@ export function AppLayout() {
           {/* Resize Handle */}
           {rightPanelOpened && (
             <div
-              ref={resizeRef}
               className={cn(
                 'absolute top-0 left-0 bottom-0 w-1 cursor-col-resize',
-                'hover:bg-interactive-base/20 active:bg-interactive-base/40',
+                'hover:bg-interactive-base/30',
                 'transition-colors z-10',
                 isResizing && 'bg-interactive-base/40'
               )}
-              onMouseDown={() => setIsResizing(true)}
-              style={{ position: 'absolute' }}
+              style={{ marginLeft: '-2px', paddingLeft: '4px' }}
+              onMouseDown={handleResizeStart}
             />
           )}
         </aside>

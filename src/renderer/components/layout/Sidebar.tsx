@@ -4,17 +4,61 @@ import {
   Plus,
   MessageSquare,
   Settings,
-  HelpCircle,
-  ChevronDown,
-  ChevronRight
+  HelpCircle
 } from 'lucide-react'
 import { cn } from '@/renderer/lib/utils'
-import { useLayoutStore, useProjectStore } from '@/renderer/store'
-import { Button, ScrollArea, Tooltip } from '@/renderer/components/ui'
+import { useLayoutStore, useProjectStore, useSettingsStore } from '@/renderer/store'
+import { Button, ScrollArea, Tooltip, Dialog, DialogContent } from '@/renderer/components/ui'
 
 const SIDEBAR_ICON_WIDTH = 64 // w-16
 const SIDEBAR_MIN_WIDTH = 244
 const SIDEBAR_MAX_WIDTH_RATIO = 0.3
+
+// Settings Dialog Component
+function SettingsDialog({ open, onOpenChange }: { open: boolean; onOpenChange: (open: boolean) => void }) {
+  const { theme, setTheme } = useSettingsStore()
+
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="min-w-[400px]">
+        <div className="flex items-center justify-between mb-6">
+          <h2 className="text-lg font-semibold text-text-strong">Settings</h2>
+        </div>
+
+        {/* Theme Settings */}
+        <div className="space-y-4">
+          <div>
+            <label className="text-sm font-medium text-text-base mb-2 block">Theme</label>
+            <div className="flex gap-2">
+              {(['system', 'light', 'dark'] as const).map((t) => (
+                <button
+                  key={t}
+                  onClick={() => setTheme(t)}
+                  className={cn(
+                    'px-4 py-2 rounded-md text-sm font-medium',
+                    'border transition-colors',
+                    theme === t
+                      ? 'bg-interactive-base text-white border-interactive-base'
+                      : 'bg-surface-raised border-border-base hover:bg-surface-base-hover'
+                  )}
+                >
+                  {t.charAt(0).toUpperCase() + t.slice(1)}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* More settings can be added here */}
+          <div className="pt-4 border-t border-border-weak">
+            <p className="text-sm text-text-weak">
+              More settings will be added in future updates.
+            </p>
+          </div>
+        </div>
+      </DialogContent>
+    </Dialog>
+  )
+}
 
 export function Sidebar() {
   const {
@@ -27,66 +71,94 @@ export function Sidebar() {
     setActiveSession,
     mobileSidebarOpened
   } = useLayoutStore()
-  const { projects, sessions } = useProjectStore()
+  const { projects, sessions, addSession } = useProjectStore()
   const [expandedProjects, setExpandedProjects] = useState<Set<string>>(new Set())
   const [isResizing, setIsResizing] = useState(false)
   const [hoverProject, setHoverProject] = useState<string | null>(null)
+  const [settingsOpen, setSettingsOpen] = useState(false)
   const sidebarRef = useRef<HTMLElement>(null)
+  const startXRef = useRef(0)
+  const startWidthRef = useRef(0)
 
   const currentProject = projects.find((p) => p.id === activeProjectId)
-
-  const toggleProject = useCallback((projectId: string) => {
-    setExpandedProjects((prev) => {
-      const next = new Set(prev)
-      if (next.has(projectId)) {
-        next.delete(projectId)
-      } else {
-        next.add(projectId)
-      }
-      return next
-    })
-  }, [])
 
   const handleAddProject = async () => {
     if (window.electronAPI) {
       const path = await window.electronAPI.selectDirectory()
       if (path) {
-        console.log('Selected directory:', path)
+        // Add the project
+        const projectName = path.split(/[/\\]/).pop() || path
+        const newProject = {
+          id: `project-${Date.now()}`,
+          name: projectName,
+          path: path,
+          isGitRepo: false,
+          lastOpened: Date.now()
+        }
+        useProjectStore.getState().addProject(newProject)
+        setActiveProject(newProject.id)
       }
     }
   }
 
   const handleNewSession = () => {
-    console.log('Create new session')
+    if (!activeProjectId) {
+      // No project selected, show message or create default
+      console.log('Please select a project first')
+      return
+    }
+
+    const newSession = {
+      id: `session-${Date.now()}`,
+      projectId: activeProjectId,
+      title: 'New Chat',
+      createdAt: Date.now(),
+      updatedAt: Date.now()
+    }
+    addSession(newSession)
+    setActiveSession(newSession.id)
   }
 
-  // Resize handler
+  // Resize handler - improved version
   useEffect(() => {
     if (!isResizing) return
 
     const handleMouseMove = (e: MouseEvent) => {
-      if (!sidebarRef.current) return
-      const rect = sidebarRef.current.getBoundingClientRect()
-      const newWidth = e.clientX - rect.left
-      const maxWidth = window.innerWidth * SIDEBAR_MAX_WIDTH_RATIO + SIDEBAR_ICON_WIDTH
-      if (newWidth >= SIDEBAR_MIN_WIDTH && newWidth <= maxWidth) {
-        setSidebarWidth(newWidth - SIDEBAR_ICON_WIDTH)
+      const deltaX = e.clientX - startXRef.current
+      const newPanelWidth = startWidthRef.current + deltaX
+      const maxWidth = window.innerWidth * SIDEBAR_MAX_WIDTH_RATIO
+
+      if (newPanelWidth >= SIDEBAR_MIN_WIDTH - SIDEBAR_ICON_WIDTH && newPanelWidth <= maxWidth) {
+        setSidebarWidth(newPanelWidth)
       }
     }
 
     const handleMouseUp = () => {
       setIsResizing(false)
+      document.body.style.cursor = ''
+      document.body.style.userSelect = ''
     }
+
+    document.body.style.cursor = 'col-resize'
+    document.body.style.userSelect = 'none'
 
     document.addEventListener('mousemove', handleMouseMove)
     document.addEventListener('mouseup', handleMouseUp)
     return () => {
       document.removeEventListener('mousemove', handleMouseMove)
       document.removeEventListener('mouseup', handleMouseUp)
+      document.body.style.cursor = ''
+      document.body.style.userSelect = ''
     }
   }, [isResizing, setSidebarWidth])
 
-  // Desktop sidebar
+  const handleResizeStart = (e: React.MouseEvent) => {
+    e.preventDefault()
+    startXRef.current = e.clientX
+    startWidthRef.current = sidebarWidth
+    setIsResizing(true)
+  }
+
   return (
     <>
       {/* Desktop Sidebar */}
@@ -145,6 +217,7 @@ export function Sidebar() {
             <div className="shrink-0 w-full pt-3 pb-3 flex flex-col items-center gap-2">
               <Tooltip content="Settings" placement="right">
                 <button
+                  onClick={() => setSettingsOpen(true)}
                   className={cn(
                     'w-10 h-10 rounded-md flex items-center justify-center',
                     'text-text-weak hover:bg-surface-base-hover hover:text-text-base',
@@ -156,6 +229,7 @@ export function Sidebar() {
               </Tooltip>
               <Tooltip content="Help" placement="right">
                 <button
+                  onClick={() => window.electronAPI?.openLink?.('https://github.com/ripperdoc/ripperdoc')}
                   className={cn(
                     'w-10 h-10 rounded-md flex items-center justify-center',
                     'text-text-weak hover:bg-surface-base-hover hover:text-text-base',
@@ -182,7 +256,7 @@ export function Sidebar() {
                       <span className="text-base font-medium text-text-strong truncate">
                         {currentProject.name}
                       </span>
-                      <span className="text-xs text-text-base truncate">
+                      <span className="text-xs text-text-weak truncate">
                         {currentProject.path}
                       </span>
                     </div>
@@ -196,6 +270,7 @@ export function Sidebar() {
                   size="lg"
                   className="w-full"
                   onClick={handleNewSession}
+                  disabled={!activeProjectId}
                 >
                   <Plus className="w-4 h-4 mr-1" />
                   New Session
@@ -222,6 +297,11 @@ export function Sidebar() {
                         <span className="flex-1 truncate text-left">{session.title}</span>
                       </button>
                     ))}
+                  {activeProjectId && sessions.filter((s) => s.projectId === activeProjectId).length === 0 && (
+                    <p className="text-xs text-text-weaker text-center py-4">
+                      No sessions yet. Click "New Session" to start.
+                    </p>
+                  )}
                 </div>
               </ScrollArea>
             </div>
@@ -232,11 +312,12 @@ export function Sidebar() {
             <div
               className={cn(
                 'absolute top-0 right-0 bottom-0 w-1 cursor-col-resize',
-                'hover:bg-interactive-base/20 active:bg-interactive-base/40',
+                'hover:bg-interactive-base/30',
                 'transition-colors z-10',
                 isResizing && 'bg-interactive-base/40'
               )}
-              onMouseDown={() => setIsResizing(true)}
+              style={{ marginRight: '-2px', paddingRight: '4px' }}
+              onMouseDown={handleResizeStart}
             />
           )}
         </div>
@@ -259,9 +340,7 @@ export function Sidebar() {
           mobileSidebarOpened ? 'translate-x-0' : '-translate-x-full'
         )}
       >
-        {/* Mobile content similar to desktop */}
         <div className="h-full w-full flex flex-col">
-          {/* Project List */}
           <div className="flex-1 min-h-0 overflow-y-auto p-2">
             {projects.map((project) => (
               <button
@@ -283,15 +362,24 @@ export function Sidebar() {
             ))}
           </div>
 
-          {/* Bottom Actions */}
           <div className="shrink-0 p-2 border-t border-border-weak">
-            <Button variant="ghost" className="w-full justify-start gap-2">
+            <Button
+              variant="ghost"
+              className="w-full justify-start gap-2"
+              onClick={() => {
+                setSettingsOpen(true)
+                useLayoutStore.getState().toggleMobileSidebar()
+              }}
+            >
               <Settings className="w-4 h-4" />
               Settings
             </Button>
           </div>
         </div>
       </nav>
+
+      {/* Settings Dialog */}
+      <SettingsDialog open={settingsOpen} onOpenChange={setSettingsOpen} />
     </>
   )
 }
