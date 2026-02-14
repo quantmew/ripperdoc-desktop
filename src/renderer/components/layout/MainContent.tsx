@@ -1,21 +1,51 @@
 import { useState, useRef, useEffect, useCallback } from 'react'
-import { Send, Paperclip, Mic, Square } from 'lucide-react'
+import { Send, Paperclip, Square, AlertCircle } from 'lucide-react'
 import { cn } from '@/renderer/lib/utils'
 import { Button, Textarea, ScrollArea } from '@/renderer/components/ui'
 import { useLayoutStore, useSessionStore } from '@/renderer/store'
 import { MessageItem } from '@/renderer/components/session/MessageItem'
-import type { Message, MessagePart } from '@/renderer/store/sessionSlice'
+import type { Message } from '@/renderer/store/sessionSlice'
+import { streamRipperdocResponse, initRipperdocClient, closeRipperdocClient, isReady } from '@/renderer/client/ripperdoc-client'
 
 export function MainContent() {
   const { activeSessionId, openFiles, activeFileId } = useLayoutStore()
   const { sessions, addMessage, updateMessage, setLoading } = useSessionStore()
   const [input, setInput] = useState('')
   const [isStreaming, setIsStreaming] = useState(false)
+  const [ripperdocError, setRipperdocError] = useState<string | null>(null)
   const textareaRef = useRef<HTMLTextAreaElement>(null)
   const scrollRef = useRef<HTMLDivElement>(null)
 
-  const session = activeSessionId ? sessions.get(activeSessionId) : null
+  // Use 'default' session when no active session
+  const currentSessionId = activeSessionId || 'default'
+  const session = sessions.get(currentSessionId)
   const messages = session?.messages || []
+  console.log('Current session:', currentSessionId, 'Messages:', messages.length)
+
+  // Check ripperdoc availability on mount
+  useEffect(() => {
+    const checkRipperdoc = async () => {
+      try {
+        console.log('Initializing ripperdoc client...')
+        await initRipperdocClient()
+        console.log('Ripperdoc client initialized, ready:', isReady())
+        setRipperdocError(null)
+      } catch (error) {
+        const errorMessage = error instanceof Error ? error.message : 'Unknown error'
+        console.error('Failed to initialize ripperdoc:', errorMessage)
+        if (errorMessage.includes('not found') || errorMessage.includes('not installed')) {
+          setRipperdocError('Ripperdoc CLI not installed. Please run: pip install git+https://github.com/quantmew/ripperdoc.git')
+        } else {
+          setRipperdocError(errorMessage)
+        }
+      }
+    }
+    checkRipperdoc()
+
+    return () => {
+      closeRipperdocClient()
+    }
+  }, [])
 
   // Auto-scroll to bottom when new messages arrive
   useEffect(() => {
@@ -25,16 +55,27 @@ export function MainContent() {
   }, [messages.length])
 
   const handleSubmit = useCallback(async () => {
+    console.log('handleSubmit called', { input: input.trim(), isStreaming, ripperdocError, isReady: isReady() })
     if (!input.trim() || isStreaming) return
+    if (ripperdocError) {
+      console.error('Ripperdoc not available:', ripperdocError)
+      return
+    }
+    if (!isReady()) {
+      console.error('Ripperdoc session not ready yet')
+      return
+    }
 
-    const sessionId = activeSessionId || 'default'
+    const sessionId = currentSessionId
+    const userInput = input.trim()
     const messageId = `msg-${Date.now()}`
+    console.log('Creating message:', { sessionId, userInput, messageId })
 
     // Create user message
     const userMessage: Message = {
       id: messageId,
       role: 'user',
-      parts: [{ type: 'text', content: input.trim() }],
+      parts: [{ type: 'text', content: userInput }],
       timestamp: Date.now()
     }
 
@@ -53,29 +94,73 @@ export function MainContent() {
       isStreaming: true
     }
     addMessage(sessionId, assistantMessage)
+    console.log('Assistant message added:', assistantMessageId)
 
-    // Simulate streaming response (replace with actual WebSocket/SDK call)
-    setTimeout(() => {
+    try {
+      console.log('Starting ripperdoc stream...')
+      let accumulatedContent = ''
+      for await (const msg of streamRipperdocResponse(userInput)) {
+        console.log('Received ripperdoc msg:', msg)
+        if (msg.type === 'assistant') {
+          // Handle content blocks
+          if (msg.parts) {
+            for (const part of msg.parts) {
+              if (part.type === 'text' && part.text) {
+                accumulatedContent = part.text
+              }
+            }
+          } else if (msg.content) {
+            accumulatedContent = msg.content
+          }
+
+          if (accumulatedContent) {
+            updateMessage(sessionId, assistantMessageId, {
+              parts: [{ type: 'text', content: accumulatedContent }],
+              isStreaming: msg.type !== 'result'
+            })
+          }
+        }
+      }
+      console.log('ripperdoc stream completed')
+    } catch (error) {
+      console.error('Error streaming response:', error)
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error'
       updateMessage(sessionId, assistantMessageId, {
-        parts: [{ type: 'text', content: 'Hello! I am Ripperdoc, your AI coding assistant. How can I help you today?' }],
+        parts: [{ type: 'text', content: `Error: ${errorMessage}` }],
         isStreaming: false
       })
+    } finally {
       setLoading(sessionId, false)
       setIsStreaming(false)
-    }, 1000)
-  }, [input, isStreaming, activeSessionId, addMessage, updateMessage, setLoading])
+    }
+  }, [input, isStreaming, currentSessionId, ripperdocError, addMessage, updateMessage, setLoading])
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
+    console.log('handleKeyDown called', { key: e.key, shiftKey: e.shiftKey })
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault()
       handleSubmit()
     }
   }
 
-  // Welcome state
-  if (!activeSessionId || messages.length === 0) {
+  // Welcome state - show when there are no messages
+  if (messages.length === 0) {
     return (
       <div className="h-full flex flex-col">
+        {/* Error Banner */}
+        {ripperdocError && (
+          <div className="mx-4 mt-4 p-4 bg-error-weak border border-error-base/30 rounded-lg flex items-start gap-3">
+            <AlertCircle className="w-5 h-5 text-error-base shrink-0 mt-0.5" />
+            <div className="flex-1">
+              <p className="text-sm font-medium text-error-base mb-1">Ripperdoc CLI Required</p>
+              <p className="text-sm text-text-weak mb-2">{ripperdocError}</p>
+              <code className="text-xs bg-surface-sunken px-2 py-1 rounded">
+                pip install git+https://github.com/quantmew/ripperdoc.git
+              </code>
+            </div>
+          </div>
+        )}
+
         {/* File Tabs */}
         {openFiles.length > 0 && (
           <div className="flex items-center border-b border-border-base bg-surface-raised">
@@ -116,17 +201,28 @@ export function MainContent() {
               <Textarea
                 ref={textareaRef}
                 value={input}
-                onChange={(e) => setInput(e.target.value)}
+                onChange={(e) => {
+                  console.log('onChange:', e.target.value)
+                  setInput(e.target.value)
+                }}
                 onKeyDown={handleKeyDown}
                 placeholder="Send a message..."
-                className="flex-1 min-h-[40px] max-h-[200px] border-0 bg-transparent resize-none focus:ring-0"
+                className="flex-1 min-h-[40px] max-h-[200px] border-0 bg-transparent resize-none focus:ring-0 select-text"
                 rows={1}
               />
               <div className="flex items-center gap-1 pb-1">
                 <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
                   <Paperclip className="w-4 h-4" />
                 </Button>
-                <Button onClick={handleSubmit} disabled={!input.trim()} size="sm" className="h-8">
+                <Button
+                  onClick={() => {
+                    console.log('Button clicked!')
+                    handleSubmit()
+                  }}
+                  disabled={!input.trim()}
+                  size="sm"
+                  className="h-8"
+                >
                   <Send className="w-4 h-4" />
                 </Button>
               </div>
@@ -142,6 +238,20 @@ export function MainContent() {
 
   return (
     <div className="h-full flex flex-col">
+      {/* Error Banner */}
+      {ripperdocError && (
+        <div className="mx-4 mt-4 p-4 bg-error-weak border border-error-base/30 rounded-lg flex items-start gap-3">
+          <AlertCircle className="w-5 h-5 text-error-base shrink-0 mt-0.5" />
+          <div className="flex-1">
+            <p className="text-sm font-medium text-error-base mb-1">Ripperdoc CLI Required</p>
+            <p className="text-sm text-text-weak mb-2">{ripperdocError}</p>
+            <code className="text-xs bg-surface-sunken px-2 py-1 rounded">
+              pip install git+https://github.com/quantmew/ripperdoc.git
+            </code>
+          </div>
+        </div>
+      )}
+
       {/* File Tabs */}
       {openFiles.length > 0 && (
         <div className="flex items-center border-b border-border-base bg-surface-raised">
@@ -176,10 +286,13 @@ export function MainContent() {
             <Textarea
               ref={textareaRef}
               value={input}
-              onChange={(e) => setInput(e.target.value)}
+              onChange={(e) => {
+                console.log('onChange:', e.target.value)
+                setInput(e.target.value)
+              }}
               onKeyDown={handleKeyDown}
               placeholder="Send a message..."
-              className="flex-1 min-h-[40px] max-h-[200px] border-0 bg-transparent resize-none focus:ring-0"
+              className="flex-1 min-h-[40px] max-h-[200px] border-0 bg-transparent resize-none focus:ring-0 select-text"
               rows={1}
               disabled={isStreaming}
             />
@@ -192,7 +305,15 @@ export function MainContent() {
                   <Square className="w-4 h-4" />
                 </Button>
               ) : (
-                <Button onClick={handleSubmit} disabled={!input.trim()} size="sm" className="h-8">
+                <Button
+                  onClick={() => {
+                    console.log('Button clicked!')
+                    handleSubmit()
+                  }}
+                  disabled={!input.trim()}
+                  size="sm"
+                  className="h-8"
+                >
                   <Send className="w-4 h-4" />
                 </Button>
               )}

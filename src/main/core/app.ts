@@ -2,17 +2,20 @@ import { BrowserWindow, app, dialog, ipcMain, Menu, Tray, nativeImage } from 'el
 import { join } from 'path'
 import { ServerManager } from '../server/manager'
 import { PtyManager } from '../pty/manager'
+import { RipperdocManager } from '../ripperdoc/manager'
 import type { ServerConfig } from '../server/types'
 
 export class MainApp {
   private serverManager: ServerManager
   private ptyManager: PtyManager
+  private ripperdocManager: RipperdocManager
   private tray: Tray | null = null
   private store: Map<string, unknown> = new Map()
 
   constructor() {
     this.serverManager = new ServerManager()
     this.ptyManager = new PtyManager()
+    this.ripperdocManager = new RipperdocManager()
   }
 
   async initialize(): Promise<void> {
@@ -40,6 +43,9 @@ export class MainApp {
   async cleanup(): Promise<void> {
     // Stop all PTY processes
     this.ptyManager.cleanup()
+
+    // Stop all ripperdoc sessions
+    this.ripperdocManager.stopAll()
 
     // Stop server
     await this.serverManager.stop()
@@ -118,6 +124,24 @@ export class MainApp {
     ipcMain.handle('theme:set', (_, theme: string) => {
       this.store.set('theme', theme)
       return true
+    })
+
+    // Ripperdoc handlers
+    ipcMain.handle('ripperdoc:start', (_, options: unknown) => {
+      try {
+        return this.ripperdocManager.start(options as Record<string, unknown>)
+      } catch (error) {
+        console.error('Failed to start ripperdoc:', error)
+        throw error
+      }
+    })
+
+    ipcMain.handle('ripperdoc:stop', (_, sessionId: string) => {
+      this.ripperdocManager.stop(sessionId)
+    })
+
+    ipcMain.on('ripperdoc:message', (_, sessionId: string, content: string) => {
+      this.ripperdocManager.send(sessionId, content)
     })
   }
 

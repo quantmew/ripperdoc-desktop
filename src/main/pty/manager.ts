@@ -23,7 +23,7 @@ export class PtyManager {
     return id
   }
 
-  private createWithId(id: string, cols: number, rows: number, sender?: Electron.WebContents): void {
+  private createWithId(id: string, cols: number, rows: number, _sender?: Electron.WebContents): void {
     const shell = process.platform === 'win32' ? 'powershell.exe' : process.env.SHELL || '/bin/bash'
 
     const ptyProcess = pty.spawn(shell, [], {

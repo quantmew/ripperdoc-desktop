@@ -1,4 +1,4 @@
-import { useState, useCallback, useRef, useEffect } from 'react'
+import { useState, useRef, useEffect } from 'react'
 import {
   FolderOpen,
   Plus,
@@ -72,9 +72,7 @@ export function Sidebar() {
     mobileSidebarOpened
   } = useLayoutStore()
   const { projects, sessions, addSession } = useProjectStore()
-  const [expandedProjects, setExpandedProjects] = useState<Set<string>>(new Set())
   const [isResizing, setIsResizing] = useState(false)
-  const [hoverProject, setHoverProject] = useState<string | null>(null)
   const [settingsOpen, setSettingsOpen] = useState(false)
   const sidebarRef = useRef<HTMLElement>(null)
   const startXRef = useRef(0)
@@ -183,7 +181,6 @@ export function Sidebar() {
                   <Tooltip key={project.id} content={project.name} placement="right">
                     <button
                       onClick={() => setActiveProject(project.id)}
-                      onMouseEnter={() => !sidebarOpened && setHoverProject(project.id)}
                       className={cn(
                         'w-10 h-10 rounded-md flex items-center justify-center',
                         'transition-colors',

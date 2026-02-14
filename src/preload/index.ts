@@ -40,6 +40,17 @@ contextBridge.exposeInMainWorld('electronAPI', {
   getTheme: () => ipcRenderer.invoke('theme:get'),
   setTheme: (theme: string) => ipcRenderer.invoke('theme:set', theme),
 
+  // Links
+  openLink: (url: string) => ipcRenderer.send('open-link', url),
+
+  // Ripperdoc
+  startRipperdoc: (options: unknown) => ipcRenderer.invoke('ripperdoc:start', options),
+  stopRipperdoc: (sessionId: string) => ipcRenderer.invoke('ripperdoc:stop', sessionId),
+  sendRipperdocMessage: (sessionId: string, content: string) => ipcRenderer.send('ripperdoc:message', sessionId, content),
+  onRipperdocMessage: (callback: (message: unknown) => void) => {
+    ipcRenderer.on('ripperdoc:message', (_, message) => callback(message))
+  },
+
   // Menu events
   onMenuNewSession: (callback: () => void) => {
     ipcRenderer.on('menu:newSession', callback)
@@ -89,6 +100,11 @@ declare global {
       storeDelete: (key: string) => Promise<boolean>
       getTheme: () => Promise<string>
       setTheme: (theme: string) => Promise<boolean>
+      openLink: (url: string) => void
+      startRipperdoc: (options: unknown) => Promise<string>
+      stopRipperdoc: (sessionId: string) => Promise<void>
+      sendRipperdocMessage: (sessionId: string, content: string) => void
+      onRipperdocMessage: (callback: (message: unknown) => void) => void
       onMenuNewSession: (callback: () => void) => void
       onMenuOpenDirectory: (callback: (path: string) => void) => void
       onMenuToggleSidebar: (callback: () => void) => void

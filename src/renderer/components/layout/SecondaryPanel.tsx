@@ -1,6 +1,4 @@
-import { useState } from 'react'
 import { Terminal, Files, Search, GitBranch, X } from 'lucide-react'
-import { cn } from '@/renderer/lib/utils'
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/renderer/components/ui'
 import { TerminalPanel } from '@/renderer/components/terminal/TerminalPanel'
 import { FileTree } from '@/renderer/components/file/FileTree'

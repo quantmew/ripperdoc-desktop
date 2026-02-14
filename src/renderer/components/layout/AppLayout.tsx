@@ -58,7 +58,7 @@ export function AppLayout() {
   }
 
   return (
-    <div className="h-screen w-screen bg-background-base flex flex-col select-none [&_input]:select-text [&_textarea]:select-text overflow-hidden">
+    <div className="h-screen w-screen bg-background-base flex flex-col overflow-hidden">
       {/* Title Bar */}
       <TitleBar />
 

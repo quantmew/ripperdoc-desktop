@@ -80,17 +80,9 @@ export class ServerManager {
 
   private findRipperdocPath(): string | null {
     // Check common installation paths
-    const paths = [
-      // Windows
-      join(app.getPath('appData'), 'ripperdoc', 'ripperdoc.exe'),
-      join(app.getPath('home'), '.local', 'bin', 'ripperdoc.exe'),
-      // macOS
-      '/usr/local/bin/ripperdoc',
-      join(app.getPath('home'), '.local', 'bin', 'ripperdoc'),
-      // Linux
-      '/usr/bin/ripperdoc',
-      join(app.getPath('home'), '.local', 'bin', 'ripperdoc')
-    ]
+    // Windows: app.getPath('appData')/ripperdoc/ripperdoc.exe
+    // macOS: /usr/local/bin/ripperdoc
+    // Linux: /usr/bin/ripperdoc
 
     // For now, return null to indicate development mode
     // In production, this would check if the file exists

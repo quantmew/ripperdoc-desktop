@@ -7,7 +7,7 @@ import { useLayoutStore } from '@/renderer/store'
 export function TitleBar() {
   const [isMaximized, setIsMaximized] = useState(false)
   const [platform, setPlatform] = useState<string>('')
-  const { sidebarOpened, toggleSidebar, toggleMobileSidebar } = useLayoutStore()
+  const { toggleSidebar, toggleMobileSidebar } = useLayoutStore()
 
   useEffect(() => {
     if (window.electronAPI) {

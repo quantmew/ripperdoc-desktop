@@ -112,3 +112,8 @@ ipcMain.handle('app:maximize', () => {
 ipcMain.handle('app:close', () => {
   mainWindow?.close()
 })
+
+// Open external links
+ipcMain.on('open-link', (_, url: string) => {
+  shell.openExternal(url)
+})

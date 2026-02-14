@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react'
+import { useState } from 'react'
 import { ChevronRight, ChevronDown, File, Folder, FolderOpen } from 'lucide-react'
 import { cn } from '@/renderer/lib/utils'
 import { ScrollArea } from '@/renderer/components/ui'

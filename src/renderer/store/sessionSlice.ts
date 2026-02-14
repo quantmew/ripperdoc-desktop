@@ -59,8 +59,12 @@ export const useSessionStore = create<SessionState>((set, get) => ({
 
   addMessage: (sessionId, message) =>
     set((state) => {
-      const session = state.sessions.get(sessionId)
-      if (!session) return state
+      let session = state.sessions.get(sessionId)
+
+      // Auto-create session if it doesn't exist
+      if (!session) {
+        session = createEmptySession(sessionId)
+      }
 
       const newSessions = new Map(state.sessions)
       newSessions.set(sessionId, {
@@ -72,8 +76,12 @@ export const useSessionStore = create<SessionState>((set, get) => ({
 
   updateMessage: (sessionId, messageId, updates) =>
     set((state) => {
-      const session = state.sessions.get(sessionId)
-      if (!session) return state
+      let session = state.sessions.get(sessionId)
+
+      // Auto-create session if it doesn't exist
+      if (!session) {
+        session = createEmptySession(sessionId)
+      }
 
       const newSessions = new Map(state.sessions)
       newSessions.set(sessionId, {
@@ -85,8 +93,12 @@ export const useSessionStore = create<SessionState>((set, get) => ({
 
   setLoading: (sessionId, isLoading) =>
     set((state) => {
-      const session = state.sessions.get(sessionId)
-      if (!session) return state
+      let session = state.sessions.get(sessionId)
+
+      // Auto-create session if it doesn't exist
+      if (!session) {
+        session = createEmptySession(sessionId)
+      }
 
       const newSessions = new Map(state.sessions)
       newSessions.set(sessionId, { ...session, isLoading })
