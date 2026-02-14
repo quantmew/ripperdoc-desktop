@@ -1,0 +1,60 @@
+{
+  "app": {
+    "name": "Ripperdoc",
+    "loading": "Loading Ripperdoc..."
+  },
+  "sidebar": {
+    "projects": "Projects",
+    "noProjects": "No projects yet",
+    "addProject": "Add Project",
+    "newSession": "New Session",
+    "settings": "Settings"
+  },
+  "chat": {
+    "welcome": "Welcome to Ripperdoc",
+    "welcomeMessage": "Your AI-powered coding assistant. Start a conversation or open a project to begin.",
+    "inputPlaceholder": "Send a message...",
+    "send": "Send",
+    "pressEnter": "Press Enter to send, Shift+Enter for new line",
+    "you": "You",
+    "assistant": "Ripperdoc",
+    "streaming": "Streaming...",
+    "copy": "Copy"
+  },
+  "terminal": {
+    "welcome": "Welcome to Ripperdoc Terminal",
+    "hint": "Type commands and press Enter to execute."
+  },
+  "panel": {
+    "files": "Files",
+    "terminal": "Terminal",
+    "search": "Search",
+    "git": "Git"
+  },
+  "settings": {
+    "title": "Settings",
+    "theme": {
+      "label": "Theme",
+      "light": "Light",
+      "dark": "Dark",
+      "system": "System"
+    },
+    "language": {
+      "label": "Language"
+    },
+    "fontSize": {
+      "label": "Font Size"
+    }
+  },
+  "menu": {
+    "file": "File",
+    "edit": "Edit",
+    "view": "View",
+    "window": "Window",
+    "newSession": "New Session",
+    "openDirectory": "Open Directory",
+    "toggleSidebar": "Toggle Sidebar",
+    "toggleTerminal": "Toggle Terminal",
+    "commandPalette": "Command Palette"
+  }
+}

@@ -1,0 +1,142 @@
+/* Import theme system first - must be before @tailwind directives */
+@import './styles/theme.css';
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Base styles */
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+html {
+  font-size: var(--font-size-base);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+body {
+  font-family: var(--font-family-sans);
+  font-size: var(--font-size-base);
+  line-height: var(--line-height-large);
+  color: var(--text-base);
+  background-color: var(--background-base);
+  overflow: hidden;
+}
+
+/* Selection */
+::selection {
+  background-color: var(--interactive-weak);
+  color: var(--text-strong);
+}
+
+/* Focus outline */
+:focus-visible {
+  outline: 2px solid var(--interactive-base);
+  outline-offset: 2px;
+}
+
+/* Scrollbar */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--border-base);
+  border-radius: 9999px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--border-strong-base);
+}
+
+/* Links */
+a {
+  color: var(--interactive-base);
+  text-decoration: none;
+}
+
+a:hover {
+  color: var(--interactive-hover);
+}
+
+/* Code */
+code, pre {
+  font-family: var(--font-family-mono);
+  font-size: var(--font-size-small);
+}
+
+code {
+  background-color: var(--code-background);
+  padding: 0.125rem 0.375rem;
+  border-radius: var(--radius-sm);
+}
+
+pre {
+  background-color: var(--code-background);
+  padding: 1rem;
+  border-radius: var(--radius-md);
+  overflow-x: auto;
+}
+
+pre code {
+  background: none;
+  padding: 0;
+}
+
+/* Electron drag region */
+.drag-region {
+  -webkit-app-region: drag;
+}
+
+.no-drag {
+  -webkit-app-region: no-drag;
+}
+
+/* Terminal overrides */
+.xterm {
+  padding: 8px;
+  font-family: var(--font-family-mono) !important;
+}
+
+.xterm-viewport::-webkit-scrollbar {
+  width: 8px;
+}
+
+.xterm-viewport::-webkit-scrollbar-thumb {
+  background: var(--terminal-text);
+  opacity: 0.3;
+  border-radius: 9999px;
+}
+
+/* Monaco editor overrides */
+.monaco-editor {
+  font-family: var(--font-family-mono) !important;
+}
+
+/* Animation */
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+.animate-spin {
+  animation: spin 1s linear infinite;
+}
+
+/* Scrollbar hide utility */
+.scrollbar-hide {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+.scrollbar-hide::-webkit-scrollbar {
+  display: none;
+}

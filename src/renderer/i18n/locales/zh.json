@@ -1,0 +1,60 @@
+{
+  "app": {
+    "name": "Ripperdoc",
+    "loading": "正在加载 Ripperdoc..."
+  },
+  "sidebar": {
+    "projects": "项目",
+    "noProjects": "暂无项目",
+    "addProject": "添加项目",
+    "newSession": "新建会话",
+    "settings": "设置"
+  },
+  "chat": {
+    "welcome": "欢迎使用 Ripperdoc",
+    "welcomeMessage": "您的 AI 编程助手。开始对话或打开项目以开始使用。",
+    "inputPlaceholder": "发送消息...",
+    "send": "发送",
+    "pressEnter": "按 Enter 发送，Shift+Enter 换行",
+    "you": "你",
+    "assistant": "Ripperdoc",
+    "streaming": "正在生成...",
+    "copy": "复制"
+  },
+  "terminal": {
+    "welcome": "欢迎使用 Ripperdoc 终端",
+    "hint": "输入命令并按 Enter 执行。"
+  },
+  "panel": {
+    "files": "文件",
+    "terminal": "终端",
+    "search": "搜索",
+    "git": "Git"
+  },
+  "settings": {
+    "title": "设置",
+    "theme": {
+      "label": "主题",
+      "light": "浅色",
+      "dark": "深色",
+      "system": "跟随系统"
+    },
+    "language": {
+      "label": "语言"
+    },
+    "fontSize": {
+      "label": "字体大小"
+    }
+  },
+  "menu": {
+    "file": "文件",
+    "edit": "编辑",
+    "view": "视图",
+    "window": "窗口",
+    "newSession": "新建会话",
+    "openDirectory": "打开目录",
+    "toggleSidebar": "切换侧边栏",
+    "toggleTerminal": "切换终端",
+    "commandPalette": "命令面板"
+  }
+}
